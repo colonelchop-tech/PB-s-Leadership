@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b6b4f">
+<title>WhatsApp Contact List Manager</title>
+<style>
+:root{--g:#0b6b4f;--g2:#128c63;--gl:#e7f6ee;--gb:#bfe3d0;--ink:#13261f;--mut:#5b6f66;--bg:#f6fbf8;--w:#fff;--red:#b3261e;--redl:#fdecea;--amb:#8a5a00;--ambl:#fff3d6;box-sizing:border-box}
+*,*::before,*::after{box-sizing:inherit}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+header{background:var(--g);color:#fff;padding:20px 16px 18px}
+header h1{margin:0;font-size:1.35rem;line-height:1.2}
+header p{margin:6px 0 0;opacity:.9;font-size:.95rem}
+main{max-width:860px;margin:0 auto;padding:14px 14px 40px}
+.card{background:var(--w);border:1px solid var(--gb);border-radius:14px;padding:16px;margin-bottom:14px}
+.note{background:var(--ambl);border-color:#f0d58a;color:#4a3300;font-size:.92rem}
+.note b{color:var(--amb)}
+.priv{background:var(--gl);font-size:.92rem}
+label{display:block;font-weight:600;margin:0 0 6px}
+select,textarea,input[type=search]{width:100%;font:inherit;font-size:16px;padding:12px;border:1.5px solid var(--gb);border-radius:10px;background:#fff;color:var(--ink)}
+textarea{min-height:130px;resize:vertical}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.btn{flex:1 1 150px;min-height:50px;padding:12px 16px;border-radius:12px;border:2px solid var(--g);background:#fff;color:var(--g);font:inherit;font-weight:700;cursor:pointer;text-align:center;display:inline-flex;align-items:center;justify-content:center}
+.btn.p{background:var(--g);color:#fff}
+.btn.d{border-color:var(--red);color:var(--red)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:3px solid #ffb703;outline-offset:2px}
+#files{position:absolute;opacity:0;width:1px;height:1px}
+#fname{font-size:.9rem;color:var(--mut);margin-top:8px;word-break:break-all}
+.prog{height:14px;background:var(--gl);border-radius:8px;overflow:hidden;margin-top:6px}
+.prog i{display:block;height:100%;width:0;background:var(--g2);transition:width .15s}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(min-width:600px){.stats{grid-template-columns:repeat(4,1fr)}}
+.stat{border:2px solid var(--gb);background:#fff;border-radius:12px;padding:12px;text-align:left;font:inherit;cursor:pointer;color:var(--ink)}
+.stat b{display:block;font-size:1.5rem;line-height:1.1}
+.stat span{font-size:.85rem;color:var(--mut)}
+.stat[aria-pressed=true]{border-color:var(--g);background:var(--gl)}
+.rows{margin-top:12px}
+.r{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 0;border-bottom:1px solid #e3efe8}
+.r .n{font-weight:700;word-break:break-all}
+.r .o{color:var(--mut);font-size:.85rem;word-break:break-all}
+.r .w{grid-column:1/-1;font-size:.85rem;color:var(--mut)}
+.b{align-self:start;font-size:.8rem;font-weight:700;padding:3px 9px;border-radius:99px}
+.b0{background:var(--gl);color:var(--g)}.b1{background:var(--redl);color:var(--red)}.b2{background:var(--ambl);color:var(--amb)}
+.pg{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
+.pg .btn{flex:0 0 auto;min-width:100px}
+.empty{color:var(--mut);padding:18px 0;text-align:center}
+.sr{position:absolute;left:-9999px}
+</style>
+</head>
+<body>
+<header>
+  <h1>WhatsApp Contact List Manager</h1>
+  <p>Clean, format and de-duplicate phone numbers. Everything stays on your device.</p>
+</header>
+<main>
+  <section class="card note" role="note">
+    <b>Format check only.</b> A number marked "valid format" looks like a real phone number. It does <b>not</b> mean the number is registered on WhatsApp. This tool never contacts WhatsApp or any server.
+  </section>
+  <section class="card priv">Private by design: numbers are processed in this browser tab and never uploaded, sent or saved. Closing or clearing the page erases them.</section>
+
+  <section class="card note" aria-labelledby="genh">
+    <h2 id="genh" style="margin:0 0 12px;font-size:1.1rem">Generate numbers (format only)</h2>
+    <p style="margin-top:0">Creates numbers that <b>match a dialing-plan format</b> you specify. It does not check whether a number is real, assigned to anyone, or on WhatsApp.</p>
+    <label for="gnet">UK network (fills in example prefixes below)</label>
+    <select id="gnet">
+      <option value="">— Choose a network —</option>
+      <option value="EE">EE</option>
+      <option value="O2">O2</option>
+      <option value="VF">Vodafone</option>
+      <option value="3">Three</option>
+      <option value="ALL">All four networks</option>
+    </select>
+    <p style="font-size:.85rem;color:var(--mut);margin:6px 0 14px">These are commonly published examples of blocks Ofcom <i>originally</i> allocated to each network — not a live lookup. Ofcom reassigns blocks, numbers get ported between networks, and MVNOs (giffgaff, Tesco Mobile, etc.) borrow ranges from these four, so treat this as a rough starting point and edit the prefixes below if you need accuracy.</p>
+    <label for="gpfx">Prefixes — one per line (digits only, no +)</label>
+    <textarea id="gpfx" style="min-height:70px" inputmode="numeric" autocomplete="off" spellcheck="false">4479
+4475
+4477</textarea>
+    <p style="font-size:.85rem;color:var(--mut);margin:6px 0 0">Each line is a full prefix: country code plus whatever digits you want fixed. E.g. for +44, enter <code>4479</code> for all 079xx numbers, or go further and type <code>447911</code> to fix the next digits too — only the digits after your prefix are randomly filled.</p>
+    <div class="row" style="margin-top:12px">
+      <div style="flex:1 1 150px">
+        <label for="glen">Total digits after +</label>
+        <input id="glen" type="number" value="12" min="1" max="15">
+      </div>
+      <div style="flex:1 1 150px">
+        <label for="gqty">How many per prefix</label>
+        <input id="gqty" type="number" value="100" min="1" max="50000">
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn p" id="gbtn">Generate into paste box below</button>
+    </div>
+    <div id="gmsg" style="margin-top:8px;font-size:.88rem;color:var(--mut)" aria-live="polite"></div>
+  </section>
+
+  <section class="card" aria-labelledby="inh">
+    <h2 id="inh" style="margin:0 0 12px;font-size:1.1rem">1. Add numbers</h2>
+    <label for="cc">Default country code</label>
+    <select id="cc"></select>
+    <p style="font-size:.88rem;color:var(--mut);margin:6px 0 14px">Used for numbers without a + or 00 prefix. Example: 07911 123456 becomes +44 7911 123456 when the UK is selected.</p>
+    <label for="paste">Paste numbers (one per line, or separated by commas)</label>
+    <textarea id="paste" placeholder="07911 123456&#10;+44 20 7946 0958&#10;(415) 555-2671" inputmode="text" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
+    <div class="row">
+      <label class="btn" for="files" id="fbtn" tabindex="0" role="button">Choose CSV or text files</label>
+      <input type="file" id="files" accept=".csv,.txt,.tsv,text/csv,text/plain" multiple>
+    </div>
+    <div id="fname" aria-live="polite"></div>
+    <div class="row">
+      <button class="btn p" id="go">Clean numbers</button>
+      <button class="btn d" id="clear">Clear all</button>
+    </div>
+    <div id="pw" hidden style="margin-top:14px">
+      <div id="pt" aria-live="polite" style="font-size:.92rem">Working…</div>
+      <div class="prog" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="pb"><i id="pi"></i></div>
+    </div>
+  </section>
+
+  <section class="card" id="res" hidden aria-labelledby="rh">
+    <h2 id="rh" style="margin:0 0 12px;font-size:1.1rem">2. Results</h2>
+    <div class="stats" role="group" aria-label="Filter by status">
+      <button class="stat" data-f="all" aria-pressed="true"><b id="sI">0</b><span>Imported (all rows)</span></button>
+      <button class="stat" data-f="0" aria-pressed="false"><b id="sV">0</b><span>Valid format (unique)</span></button>
+      <button class="stat" data-f="1" aria-pressed="false"><b id="sB">0</b><span>Invalid format</span></button>
+      <button class="stat" data-f="2" aria-pressed="false"><b id="sD">0</b><span>Duplicates removed</span></button>
+    </div>
+    <div style="margin-top:14px">
+      <label for="q">Search</label>
+      <input type="search" id="q" placeholder="Search by digits or original text" autocomplete="off">
+    </div>
+    <div class="row">
+      <button class="btn p" id="ex1">Export clean list (CSV)</button>
+      <button class="btn" id="ex2">Export all with status</button>
+    </div>
+    <div id="sum" style="margin-top:12px;font-size:.9rem;color:var(--mut)" aria-live="polite"></div>
+    <div class="rows" id="rows"></div>
+    <div class="pg">
+      <button class="btn" id="prev">Previous</button>
+      <span id="pinfo" style="font-size:.9rem"></span>
+      <button class="btn" id="next">Next</button>
+    </div>
+  </section>
+</main>
+
+<script>
+(function(){
+"use strict";
+// iso, name, calling code, min national digits, max national digits, uses leading 0 trunk prefix
+var C=[["GB","United Kingdom","44",9,10,1],["US","United States","1",10,10,0],["CA","Canada","1",10,10,0],["IE","Ireland","353",7,9,1],["AU","Australia","61",9,9,1],["NZ","New Zealand","64",8,10,1],["IN","India","91",10,10,1],["PK","Pakistan","92",10,10,1],["BD","Bangladesh","880",10,10,1],["NG","Nigeria","234",8,10,1],["GH","Ghana","233",9,9,1],["KE","Kenya","254",9,9,1],["ZA","South Africa","27",9,9,1],["EG","Egypt","20",9,10,1],["FR","France","33",9,9,1],["DE","Germany","49",7,11,1],["ES","Spain","34",9,9,0],["IT","Italy","39",6,11,0],["NL","Netherlands","31",9,9,1],["BE","Belgium","32",8,9,1],["PT","Portugal","351",9,9,0],["PL","Poland","48",9,9,0],["SE","Sweden","46",7,9,1],["CH","Switzerland","41",9,9,1],["TR","Turkey","90",10,10,1],["AE","UAE","971",8,9,1],["SA","Saudi Arabia","966",9,9,1],["BR","Brazil","55",10,11,1],["MX","Mexico","52",10,10,0],["AR","Argentina","54",10,10,0],["ID","Indonesia","62",8,12,1],["PH","Philippines","63",10,10,1],["MY","Malaysia","60",9,10,1],["SG","Singapore","65",8,8,0],["JP","Japan","81",9,10,1],["CN","China","86",11,11,0]];
+var CC={};C.forEach(function(c){if(!CC[c[2]])CC[c[2]]=c});
+var $=function(i){return document.getElementById(i)};
+var rows=[],view=[],filt="all",page=0,PS=100,run=0,pending=[];
+
+C.forEach(function(c){var o=document.createElement("option");o.value=c[0];o.textContent=c[1]+" (+"+c[2]+")";$("cc").appendChild(o)});
+$("cc").value="GB";
+function def(){var v=$("cc").value;return C.filter(function(c){return c[0]===v})[0]}
+function esc(s){return String(s).replace(/[&<>"']/g,function(m){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]})}
+function fmt(n){return n.toLocaleString()}
+
+function check(c,nat){ // nat = national digits (trunk 0 removed)
+  if(nat.charAt(0)==="0")return"Unexpected leading 0 after country code";
+  if(nat.length<c[3]||nat.length>c[4])return"Has "+nat.length+" digits after +"+c[2]+"; expected "+(c[3]===c[4]?c[3]:c[3]+"–"+c[4]);
+  return"";
+}
+function norm(raw,d){
+  var s=raw.trim();
+  if(!/\d/.test(s))return{st:1,why:"No digits found"};
+  if(/[^\d\s+()\-.\/]/.test(s.replace(/\(0\)/g,"")))return{st:1,why:"Contains letters or unsupported symbols"};
+  var plus=s.charAt(0)==="+";
+  var dg=s.replace(/\(0\)/g,"").replace(/\D/g,"");
+  if(!plus&&dg.indexOf("00")===0){plus=true;dg=dg.slice(2)}
+  var c,nat,why;
+  if(!plus&&!(dg.indexOf(d[2])===0&&dg.length>d[4]&&dg.length-d[2].length>=d[3]&&dg.length-d[2].length<=d[4]+(d[5]?1:0))){
+    c=d;nat=dg;if(c[5]&&nat.charAt(0)==="0")nat=nat.slice(1);
+    why=check(c,nat);
+    return why?{st:1,why:why}:{st:0,e:"+"+c[2]+nat};
+  }
+  if(!plus)dg=dg; // already begins with default country code
+  for(var l=1;l<=3&&!c;l++){if(CC[dg.slice(0,l)])c=CC[dg.slice(0,l)]}
+  if(c){
+    nat=dg.slice(c[2].length);if(c[5]&&nat.charAt(0)==="0")nat=nat.slice(1);
+    why=check(c,nat);
+    return why?{st:1,why:why}:{st:0,e:"+"+c[2]+nat};
+  }
+  if(dg.charAt(0)==="0")return{st:1,why:"Country code cannot start with 0"};
+  if(dg.length<8||dg.length>15)return{st:1,why:"International numbers need 8–15 digits (has "+dg.length+")"};
+  return{st:0,e:"+"+dg,why:"Country not in built-in list; only length checked"};
+}
+
+function splitCsv(line){var out=[],cur="",q=false;
+  for(var i=0;i<line.length;i++){var ch=line[i];
+    if(q){if(ch==='"'){if(line[i+1]==='"'){cur+='"';i++}else q=false}else cur+=ch}
+    else if(ch==='"')q=true;
+    else if(ch===","||ch===";"||ch==="\t"){out.push(cur);cur=""}
+    else cur+=ch}
+  out.push(cur);return out}
+function extract(text,isFile,out){
+  var lines=text.split(/\r\n|\n|\r/),start=0,col=-1;
+  if(isFile&&lines.length){var h=splitCsv(lines[0]);
+    if(!h.some(function(c){return/\d{5,}/.test(c)})){start=1;col=h.findIndex(function(c){return/phone|mobile|msisdn|tel|cell|whatsapp|number/i.test(c)})}}
+  for(var i=start;i<lines.length;i++){var ln=lines[i];if(!ln.trim())continue;
+    if(isFile){var cells=splitCsv(ln),v;
+      if(col>=0)v=cells[col];
+      else{v=cells.find(function(c){return(c.match(/\d/g)||[]).length>=6});
+        if(v===undefined)v=cells.find(function(c){return/\d/.test(c)});
+        if(v===undefined)v=cells[0]}
+      out.push((v||"").trim());
+    }else ln.split(/[,;\t]+/).forEach(function(c){c=c.trim();if(c)out.push(c)});
+  }
+}
+function readFile(f){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(r.result)};r.onerror=function(){rej(r.error)};r.readAsText(f)})}
+
+function setProg(done,total,label){
+  var p=total?Math.round(done/total*100):0;
+  $("pw").hidden=false;$("pi").style.width=p+"%";$("pb").setAttribute("aria-valuenow",p);
+  $("pt").textContent=label||("Processing "+fmt(done)+" of "+fmt(total)+" ("+p+"%)");
+}
+function busy(b){$("go").disabled=b;$("ex1").disabled=b;$("ex2").disabled=b}
+
+async function start(){
+  var id=++run;busy(true);rows=[];
+  $("res").hidden=true;
+  var items=[];
+  try{
+    var fl=$("files").files;
+    for(var i=0;i<fl.length;i++){setProg(i,fl.length,"Reading "+fl[i].name+"…");
+      var t=await readFile(fl[i]);if(id!==run)return;extract(t,true,items)}
+    extract($("paste").value,false,items);
+  }catch(e){$("pt").textContent="Could not read a file. Try again or paste the numbers instead.";busy(false);return}
+  if(!items.length){$("pt").textContent="No numbers found. Paste numbers or choose a file.";$("pw").hidden=false;$("pi").style.width="0";busy(false);return}
+  var d=def(),seen=new Set(),n=items.length,pos=0,CH=2000;
+  (function step(){
+    if(id!==run)return;
+    var end=Math.min(pos+CH,n);
+    for(;pos<end;pos++){var raw=items[pos],r=norm(raw,d),row={raw:raw,st:r.st,e:r.e||"",why:r.why||""};
+      if(r.st===0){if(seen.has(r.e)){row.st=2;row.why="Duplicate of an earlier number"}else seen.add(r.e)}
+      rows.push(row)}
+    setProg(pos,n);
+    if(pos<n){setTimeout(step,0)}
+    else{busy(false);$("pt").textContent="Done. "+fmt(n)+" rows processed.";$("res").hidden=false;setFilter("all");$("res").scrollIntoView({behavior:"smooth",block:"start"})}
+  })();
+}
+
+function stats(){var v=0,b=0,d=0;for(var i=0;i<rows.length;i++){var s=rows[i].st;if(s===0)v++;else if(s===1)b++;else d++}
+  $("sI").textContent=fmt(rows.length);$("sV").textContent=fmt(v);$("sB").textContent=fmt(b);$("sD").textContent=fmt(d)}
+function setFilter(f){filt=f;page=0;
+  document.querySelectorAll(".stat").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.f===f)});
+  stats();apply()}
+function apply(){
+  var q=$("q").value.trim().toLowerCase(),qd=q.replace(/\D/g,""),fs=filt==="all"?-1:+filt;
+  view=[];
+  for(var i=0;i<rows.length;i++){var r=rows[i];if(fs>=0&&r.st!==fs)continue;
+    if(q&&!(r.raw.toLowerCase().indexOf(q)>-1||(qd&&r.e.indexOf(qd)>-1)||r.e.indexOf(q)>-1))continue;
+    view.push(i)}
+  page=Math.min(page,Math.max(0,Math.ceil(view.length/PS)-1));
+  render()}
+var LBL=["Valid format","Invalid format","Duplicate"];
+function render(){
+  var h="",a=page*PS,e=Math.min(a+PS,view.length);
+  for(var i=a;i<e;i++){var r=rows[view[i]];
+    h+='<div class="r"><div><div class="n">'+esc(r.e||"—")+'</div><div class="o">Original: '+esc(r.raw||"(empty)")+'</div></div><span class="b b'+r.st+'">'+LBL[r.st]+'</span>'+(r.why?'<div class="w">'+esc(r.why)+'</div>':"")+'</div>'}
+  $("rows").innerHTML=h||'<div class="empty">No matching rows.</div>';
+  var pages=Math.max(1,Math.ceil(view.length/PS));
+  $("pinfo").textContent="Page "+(page+1)+" of "+fmt(pages);
+  $("sum").textContent="Showing "+fmt(view.length?a+1:0)+"–"+fmt(e)+" of "+fmt(view.length)+" matching rows";
+  $("prev").disabled=page===0;$("next").disabled=page>=pages-1}
+
+function q(s){s=String(s);if(/^[=@\t\r]/.test(s))s="'"+s;return'"'+s.replace(/"/g,'""')+'"'}
+function dl(name,lines){
+  var b=new Blob(["\ufeff"+lines.join("\r\n")],{type:"text/csv;charset=utf-8"});
+  var u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(u);a.remove()},4000)}
+function exp(all){
+  var out=[all?"normalized_number,original,format_status,note":"normalized_number,original"];
+  for(var i=0;i<rows.length;i++){var r=rows[i];
+    if(all)out.push([q(r.e),q(r.raw),q(LBL[r.st]),q(r.why)].join(","));
+    else if(r.st===0)out.push([q(r.e),q(r.raw)].join(","))}
+  dl(all?"all-numbers-with-status.csv":"clean-numbers.csv",out)}
+
+function clearAll(){run++;rows=[];view=[];pending=[];
+  $("paste").value="";$("files").value="";$("fname").textContent="";$("q").value="";
+  $("res").hidden=true;$("pw").hidden=true;$("rows").innerHTML="";busy(false);filt="all"}
+
+var NET={
+  EE:["44791","44792","44793","447944","447984"],
+  O2:["447401","447402","447457","447458","447700"],
+  VF:["447788","447789","447827","447840","447841"],
+  "3":["447482","447483","447581","447582","447583"]
+};
+NET.ALL=[].concat(NET.EE,NET.O2,NET.VF,NET["3"]);
+$("gnet").onchange=function(){
+  var v=this.value;
+  if(v&&NET[v])$("gpfx").value=NET[v].join("\n");
+};
+$("gbtn").onclick=function(){
+  var raw=$("gpfx").value.split(/\r\n|\n|\r|,/).map(function(s){return s.replace(/\D/g,"")}).filter(Boolean);
+  var prefixes=Array.from(new Set(raw));
+  var len=parseInt($("glen").value,10)||0;
+  var qtyEach=Math.max(1,Math.min(50000,parseInt($("gqty").value,10)||0));
+  var msg=$("gmsg");
+  if(!prefixes.length){msg.textContent="Enter at least one prefix (digits only, one per line).";return}
+  var CAP=50000,notes=[],out=[];
+  var perPrefixCap=Math.max(1,Math.floor(CAP/prefixes.length));
+  if(qtyEach>perPrefixCap){notes.push("Capped to "+fmt(perPrefixCap)+" per prefix to keep the combined total at "+fmt(CAP)+".");qtyEach=perPrefixCap}
+  for(var p=0;p<prefixes.length;p++){
+    var pfx=prefixes[p];
+    if(len<=pfx.length){notes.push("Skipped \""+pfx+"\": total digits after + must be longer than this prefix.");continue}
+    var rem=len-pfx.length,maxPossible=Math.pow(10,rem),q=qtyEach;
+    if(q>maxPossible){notes.push("Prefix \""+pfx+"\": only "+fmt(maxPossible)+" combinations exist at this length; generating all of them.");q=maxPossible}
+    var set=new Set(),got=0,tries=0,maxTries=q*25+1000;
+    while(got<q&&tries<maxTries){
+      tries++;
+      var d="";for(var i=0;i<rem;i++)d+=Math.floor(Math.random()*10);
+      if(!set.has(d)){set.add(d);got++;out.push("+"+pfx+d)}
+    }
+  }
+  if(!out.length){msg.textContent="No numbers generated. "+notes.join(" ");return}
+  msg.textContent="Generated "+fmt(out.length)+" numbers across "+fmt(prefixes.length)+" prefix(es). "+notes.join(" ")+" Review them below, then click \"Clean numbers\".";
+  $("paste").value=out.join("\n");
+  $("paste").scrollIntoView({behavior:"smooth",block:"center"});
+};
+$("go").onclick=start;
+$("clear").onclick=clearAll;
+$("ex1").onclick=function(){exp(false)};
+$("ex2").onclick=function(){exp(true)};
+$("prev").onclick=function(){page--;render()};
+$("next").onclick=function(){page++;render()};
+$("files").onchange=function(){var f=this.files,n=[];for(var i=0;i<f.length;i++)n.push(f[i].name);$("fname").textContent=n.length?"Selected: "+n.join(", "):""};
+$("fbtn").onkeydown=function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();$("files").click()}};
+document.querySelectorAll(".stat").forEach(function(b){b.onclick=function(){setFilter(b.dataset.f)}});
+var tm;$("q").oninput=function(){clearTimeout(tm);tm=setTimeout(function(){page=0;apply()},250)};
+})();
+</script>
+</body>
+</html>
